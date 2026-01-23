@@ -6,73 +6,111 @@ import matplotlib.animation as animation
 from pendulum import double_pendulum_derivs, L1, L2
 
 
-def animate_pendulum(theta1_0, theta2_0, omega1_0=0.0, omega2_0=0.0, t_max=40, interval=2):
-    """
-    Animate a double pendulum with given initial conditions.
+DEFAULT_COLORS = ['blue', 'red', 'green', 'orange', 'purple', 'cyan', 'magenta', 'brown']
 
-    Parameters:
-        theta1_0: initial angle of first pendulum (rad)
-        theta2_0: initial angle of second pendulum (rad)
-        omega1_0: initial angular velocity of first pendulum (rad/s)
-        omega2_0: initial angular velocity of second pendulum (rad/s)
-        t_max: simulation time (s)
-        interval: animation interval in ms (lower = faster)
-    """
-    y0 = [theta1_0, omega1_0, theta2_0, omega2_0]
+
+def animate_pendulum(pendulums, t_max=40, interval=2, trail_length=1000, show_legend=True,
+                     title="Double Pendulum Trajectory"):
+    if isinstance(pendulums, dict):
+        pendulums = [pendulums]
 
     t_span = (0, t_max)
     t_eval = np.linspace(0, t_max, int(t_max * 100))
 
-    sol = solve_ivp(double_pendulum_derivs, t_span, y0, t_eval=t_eval, max_step=0.01)
+    # Simulate all pendulums
+    simulations = []
+    for i, p in enumerate(pendulums):
+        theta1_0 = p['theta1_0']
+        theta2_0 = p['theta2_0']
+        omega1_0 = p.get('omega1_0', 0.0)
+        omega2_0 = p.get('omega2_0', 0.0)
+        color = p.get('color', DEFAULT_COLORS[i % len(DEFAULT_COLORS)])
+        label = p.get('label', f'Pendulum {i+1}')
+        solver = p.get('solver', None)
 
-    theta1 = sol.y[0]
-    theta2 = sol.y[2]
+        y0 = [theta1_0, omega1_0, theta2_0, omega2_0]
 
-    # Convert to cartesian coordinates
-    x1 = L1 * np.sin(theta1)
-    y1 = -L1 * np.cos(theta1)
+        if solver is not None:
+            t, y = solver(double_pendulum_derivs, t_span, y0, t_eval)
+            theta1 = y[0]
+            theta2 = y[2]
+        else:
+            sol = solve_ivp(double_pendulum_derivs, t_span, y0, t_eval=t_eval, max_step=0.01)
+            theta1 = sol.y[0]
+            theta2 = sol.y[2]
 
-    x2 = x1 + L2 * np.sin(theta2)
-    y2 = y1 - L2 * np.cos(theta2)
+        # Convert to cartesian coordinates
+        x1 = L1 * np.sin(theta1)
+        y1 = -L1 * np.cos(theta1)
+        x2 = x1 + L2 * np.sin(theta2)
+        y2 = y1 - L2 * np.cos(theta2)
 
-    # plotting
-    figure, ax = plt.subplots(figsize=(6, 6))
-    ax.set_title("Double Pendulum Trajectory")
+        simulations.append({
+            'x1': x1, 'y1': y1, 'x2': x2, 'y2': y2,
+            'color': color, 'label': label
+        })
+
+    # Setup plot
+    figure, ax = plt.subplots(figsize=(8, 8))
+    ax.set_title(title)
     ax.set_xlabel("x")
     ax.set_ylabel("y")
     ax.grid(True)
     ax.set_aspect('equal')
-    ax.set_xlim(-L1 - L2 - 0.5, L1 + L2 + 0.5)
-    ax.set_ylim(-L1 - L2 - 0.5, L1 + L2 + 0.5)
 
-    rod_lines = ax.plot([], [], lw=2)[0]
-    point1 = ax.plot([], [], 'o', color="k", markersize=2)[0]
-    point2 = ax.plot([], [], 'o', color="k", markersize=2)[0]
-    trail_line = ax.plot([], [], lw=1, color='c', alpha=0.3)[0]
+    # Fixed axis limits based on max pendulum reach
+    max_reach = L1 + L2
+    padding = 0.5
+    ax.set_xlim(-max_reach - padding, max_reach + padding)
+    ax.set_ylim(-max_reach - padding, max_reach + padding)
+
+    # Create plot elements for each pendulum
+    artists = []
+    for sim in simulations:
+        color = sim['color']
+        label = sim['label']
+        rod_line, = ax.plot([], [], lw=2, color=color, label=label)
+        point1, = ax.plot([], [], 'o', color=color, markersize=6)
+        point2, = ax.plot([], [], 'o', color=color, markersize=8)
+        trail_line, = ax.plot([], [], lw=1, color=color, alpha=0.3)
+        artists.append({
+            'rod': rod_line, 'point1': point1, 'point2': point2, 'trail': trail_line
+        })
+
+    if show_legend:
+        ax.legend(loc='upper right')
+
+    all_artists = []
+    for a in artists:
+        all_artists.extend([a['rod'], a['point1'], a['point2'], a['trail']])
 
     def init():
-        rod_lines.set_data([], [])
-        point1.set_data([], [])
-        point2.set_data([], [])
-        trail_line.set_data([], [])
-        return rod_lines, point1, point2, trail_line
+        for a in artists:
+            a['rod'].set_data([], [])
+            a['point1'].set_data([], [])
+            a['point2'].set_data([], [])
+            a['trail'].set_data([], [])
+        return all_artists
 
     def update(frame):
-        x0 = y0_coord = 0
-        x_1, y_1 = x1[frame], y1[frame]
-        x_2, y_2 = x2[frame], y2[frame]
-        rod_lines.set_data([x0, x_1, x_2], [y0_coord, y_1, y_2])
-        point1.set_data([x_1], [y_1])
-        point2.set_data([x_2], [y_2])
-        trail_length = 1000
-        if frame > trail_length:
-            trail_line.set_data(x2[frame-trail_length:frame+1], y2[frame-trail_length:frame+1])
-        else:
-            trail_line.set_data(x2[:frame+1], y2[:frame+1])
-        return rod_lines, point1, point2, trail_line
+        for sim, a in zip(simulations, artists):
+            x1, y1 = sim['x1'][frame], sim['y1'][frame]
+            x2, y2 = sim['x2'][frame], sim['y2'][frame]
 
-    ani = animation.FuncAnimation(figure, update, frames=len(x2), interval=interval,
-                                  init_func=init, blit=True)
+            a['rod'].set_data([0, x1, x2], [0, y1, y2])
+            a['point1'].set_data([x1], [y1])
+            a['point2'].set_data([x2], [y2])
+
+            if frame > trail_length:
+                a['trail'].set_data(sim['x2'][frame-trail_length:frame+1],
+                                    sim['y2'][frame-trail_length:frame+1])
+            else:
+                a['trail'].set_data(sim['x2'][:frame+1], sim['y2'][:frame+1])
+
+        return all_artists
+
+    ani = animation.FuncAnimation(figure, update, frames=len(simulations[0]['x1']),
+                                  interval=interval, init_func=init, blit=True)
 
     plt.show()
 
@@ -149,3 +187,5 @@ def animate_comparison(initial_angle, t_max=30, interval=20):
     ani = animation.FuncAnimation(fig, update, frames=len(t), interval=interval,
                                   init_func=init, blit=True)
     plt.show()
+
+

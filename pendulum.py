@@ -32,7 +32,11 @@ def double_pendulum_derivs(t, y):
 
 def main():
     from animations import animate_pendulum
-    animate_pendulum(np.pi/2, np.pi/2 + 0.01)
+    # Example: two pendulums with slightly different initial conditions (chaos demo)
+    animate_pendulum([
+        {'theta1_0': np.pi/2, 'theta2_0': np.pi/2, 'color': 'blue', 'label': 'Pendulum 1'},
+        {'theta1_0': np.pi/2, 'theta2_0': np.pi/2 + 0.01, 'color': 'red', 'label': 'Pendulum 2'},
+    ])
 
 
 if __name__ == "__main__":
