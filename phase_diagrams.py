@@ -1,11 +1,15 @@
-from animations import animate_pendulum
+"""Phase space visualization for double pendulum."""
 import numpy as np
 import matplotlib.pyplot as plt
-from pendulum import L1, L2
 import matplotlib.animation as animation
 from mpl_toolkits.mplot3d import Axes3D
 
+from animations import animate_pendulum
+from pendulum import L1, L2
+
+
 def remove_lines(theta):
+    """Replace discontinuities (angle wrapping) with NaN to prevent plot artifacts."""
     # indices where the jump is larger than pi 
     diff = np.diff(theta)
     indices = np.where(np.abs(diff) > np.pi)[0]
@@ -16,9 +20,8 @@ def remove_lines(theta):
     return theta_clean
 
 
-#Initial values
-
-diff = 2.5 # 2.27435 for lightly chaotic
+# Initial values
+diff = 2.5  # 2.27435 for lightly chaotic
 theta1_0 =  np.pi / diff
 theta2_0 =  np.pi / diff
 
@@ -45,7 +48,7 @@ plt.show()
 
 
 def phase_animation():
-    #Animation part
+    """Animate the trajectory in θ₁-θ₂ phase space."""
     figure, ax = plt.subplots(figsize=(6,6))
     ax.set_title("Angular phase")
     ax.set_xlabel("theta_first")

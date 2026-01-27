@@ -1,13 +1,16 @@
+"""Compare double pendulum motion to simple harmonic approximation."""
 import argparse
 import numpy as np
 from scipy.integrate import solve_ivp
 from scipy.optimize import minimize_scalar
 import matplotlib.pyplot as plt
+
 from pendulum import double_pendulum_derivs
 from animations import animate_comparison
 
 
 def harmonic_comparison(initial_angle1, t_max=30, compare_endpoints=False):
+    """Fit harmonic motion to double pendulum and compute RMS error."""
     t = np.linspace(0, t_max, 500)
     y = solve_ivp(double_pendulum_derivs, (0, t_max), [initial_angle1, 0, initial_angle1, 0], t_eval=t).y
     theta1, omega1, theta2, omega2 = y
@@ -25,10 +28,12 @@ def harmonic_comparison(initial_angle1, t_max=30, compare_endpoints=False):
     return f, w, rms, t, theta1
 
 
-angles = np.array([i/100 for i in range(0, 300, 2)])
-threshold = 0.1
+angles = np.array([i/100 for i in range(0, 300, 2)])  # 0 to 3 rad
+threshold = 0.1  # rad
+
 
 def plot_rms():
+    """Plot RMS error vs initial angle to show harmonic approximation validity."""
     rms_values = []
     for angle in angles:
         f, w, rms, t, theta1 = harmonic_comparison(angle)
@@ -64,10 +69,6 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
 
 
 

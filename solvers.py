@@ -1,15 +1,17 @@
+"""ODE solvers and energy analysis for double pendulum."""
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import fsolve
 from scipy.integrate import solve_ivp
+
 from animations import animate_pendulum
 from pendulum import double_pendulum_derivs, L1, L2, m1, m2, g
-
 
 DEFAULT_COLORS = ['blue', 'red', 'green', 'orange', 'purple', 'cyan', 'magenta', 'brown']
 
 
 def explicit_euler(derivs, t_span, y0, t_eval):
+    """Forward Euler method: y_{n+1} = y_n + dt·f(t_n, y_n)."""
     y = np.zeros((4, len(t_eval)))
     y[:, 0] = y0
     for i in range(len(t_eval) - 1):
@@ -21,10 +23,11 @@ def explicit_euler(derivs, t_span, y0, t_eval):
 
 
 def implicit_euler(derivs, t_span, y0, t_eval):
+    """Backward Euler method: y_{n+1} = y_n + dt·f(t_{n+1}, y_{n+1}). Solved via fsolve."""
     y = np.zeros((4, len(t_eval)))
     y[:, 0] = y0
 
-    # we want to find y_n+1 by F(y_n+1) = yn+1 - yn - dy*dt
+    # Solve F(y_{n+1}) = y_{n+1} - y_n - dt·f(t_{n+1}, y_{n+1}) = 0
     for i in range(len(t_eval)-1):
         dt = t_eval[i+1] - t_eval[i]
         F = lambda new_y: new_y - y[:, i] - dt * np.array(derivs(t_eval[i+1], new_y)) # find the zeros of this function
@@ -36,10 +39,9 @@ def implicit_euler(derivs, t_span, y0, t_eval):
 
 
 def compute_energy(theta1, omega1, theta2, omega2):
-
+    """Total energy E = T + U from Lagrangian mechanics."""
     T = omega1**2 + 0.5*omega2**2 + omega2*omega1*np.cos(theta1-theta2)
     U = -g*(2*np.cos(theta1) + np.cos(theta2))
-
     return T + U
 
 

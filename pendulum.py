@@ -1,6 +1,7 @@
+"""Core physics for the double pendulum system."""
 import numpy as np
 
-# physical values
+# Physical constants
 m1 = 1.0   # mass of first pendulum
 m2 = 1.0   # mass of second pendulum
 L1 = 1.0   # length of first rod
@@ -9,6 +10,7 @@ g  = 9.81  # gravity
 
 
 def double_pendulum_derivs(t, y):
+    """Equations of motion for the double pendulum. Returns [ω₁, α₁, ω₂, α₂]."""
     theta1, omega1, theta2, omega2 = y
 
     # Helper variables

@@ -1,16 +1,18 @@
+"""Animation utilities for double pendulum visualization."""
 import numpy as np
 from scipy.integrate import solve_ivp
 from scipy.optimize import minimize_scalar
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-from pendulum import double_pendulum_derivs, L1, L2
 
+from pendulum import double_pendulum_derivs, L1, L2
 
 DEFAULT_COLORS = ['blue', 'red', 'green', 'orange', 'purple', 'cyan', 'magenta', 'brown']
 
 
 def animate_pendulum(pendulums, t_max=40, interval=2, trail_length=1000, show_legend=True,
                      title="Double Pendulum Trajectory", show_animation=True, derivs=None):
+    """Simulate and animate one or more double pendulums."""
     if derivs is None:
         derivs = double_pendulum_derivs
     if isinstance(pendulums, dict):

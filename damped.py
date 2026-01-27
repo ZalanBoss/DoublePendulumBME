@@ -1,15 +1,16 @@
+"""Damped double pendulum simulation and energy relaxation analysis."""
 import numpy as np
-import matplotlib.pylab as plt
-from numpy.linalg import solve
+import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
 from scipy.optimize import curve_fit
 
-import pendulum
 from solvers import plot_energy, compute_energy
 
 g = 9.81
 
-def damped_double_pendulum_derivs(t, y, gamma1 = 0.2, gamma2 = 0.2):
+
+def damped_double_pendulum_derivs(t, y, gamma1=0.2, gamma2=0.2):
+    """Derivative function for damped double pendulum."""
     theta1, omega1, theta2, omega2 = y
 
     A = np.cos(theta2 - theta1)
@@ -25,6 +26,7 @@ def damped_double_pendulum_derivs(t, y, gamma1 = 0.2, gamma2 = 0.2):
     return [omega1, alpha1, omega2, alpha2]
 
 def fit_exponential(gammas, relaxation_times):
+    """Fit τ(γ) to exponential: τ = a·exp(-b·γ) + c. Returns (params, covariance)."""
     gammas = np.array(gammas)
     relaxation_times = np.array(relaxation_times)
 
@@ -32,9 +34,10 @@ def fit_exponential(gammas, relaxation_times):
         return a * np.exp(-b * x) + c
 
     popt, err = curve_fit(model, gammas, relaxation_times, p0=[10, 1, 0], maxfev=5000)
-    return popt, err  # (a, b, c)
+    return popt, err
 
 def energy_vs_gamma(threshold=1/np.e, gamma_max=5, t_max=100, show=True):
+    """Compute relaxation time τ vs damping coefficient γ."""
     gamma_space = np.linspace(0.01, gamma_max, 150)  
 
     fig, ax = plt.subplots(figsize=(10, 6))

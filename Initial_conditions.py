@@ -1,8 +1,10 @@
+"""Demonstrate sensitivity to initial conditions (chaos)."""
 import numpy as np
-from animations import animate_pendulum
 import matplotlib.pyplot as plt
 
-#Initial angles
+from animations import animate_pendulum
+
+# Initial angles
 difference = 0.05
 theta1_0 = np.pi / 2 + difference
 theta2_0 = np.pi / 2 + difference
