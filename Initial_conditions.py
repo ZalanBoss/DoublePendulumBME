@@ -1,52 +1,104 @@
-import numpy as np
 from animations import animate_pendulum
+import numpy as np
 import matplotlib.pyplot as plt
+from pendulum import L1, L2
+import matplotlib.animation as animation
+from mpl_toolkits.mplot3d import Axes3D
 
-#Initial angles
-difference = 0.05
-theta1_0 = np.pi / 2 + difference
-theta2_0 = np.pi / 2 + difference
-gamma1_0 = np.pi / 2 
-gamma2_0 = np.pi / 2 
+def remove_lines(theta):
+    # indices where the jump is larger than pi 
+    diff = np.diff(theta)
+    indices = np.where(np.abs(diff) > np.pi)[0]
+    
+    # change to  NaNs to prevent "jump lines"
+    theta_clean = theta.astype(float)
+    theta_clean[indices] = np.nan
+    return theta_clean
+
+
+#Initial values
+
+diff = 2.27435 # 2.27435 for chaotic after some time
+theta1_0 =  np.pi / diff
+theta2_0 =  np.pi / diff
+t_max = 200
 
 pendulums = [
     {'theta1_0': theta1_0, 'theta2_0': theta2_0,
-        'color': 'red', 'label': 'Built In (RK45)'},
-    {'theta1_0': gamma1_0, 'theta2_0': gamma2_0,
-        'color': 'blue', 'label': 'Built In (RK45)'},
+        'color': 'green', 'label': 'RK045'},
 ]
+sim = animate_pendulum(pendulums=pendulums,show_animation= True,t_max=t_max)[0]
 
-sim = animate_pendulum(pendulums=pendulums, t_max= 100, interval = 3, show_animation=True)
+# Take the angles and angular velocity
+theta1 = (sim['theta1'] + np.pi) % (2 * np.pi) - np.pi
+theta2 = (sim['theta2'] + np.pi) % (2 * np.pi) - np.pi
+omega1 = sim['omega1']
+omega2 = sim['omega2']
+theta1 = remove_lines(theta1)
+theta2 = remove_lines(theta2)
+
+plt.title(r'$\theta_1$ vs $\theta_2$')
+plt.xlabel(r'$\theta_1$')
+plt.ylabel(r'$\theta_2$')
+plt.plot(theta1, theta2)
+plt.show()
+
+plt.title(r'$\theta_2$ vs $\omega_2$')
+plt.xlabel(r'$\theta_2$')
+plt.ylabel(r'$\omega_2$')
+plt.plot(theta2, omega2)
+plt.show()
 
 
-# For various initial differences
-position_difference = []
+def phase_animation():
+    #Animation part
+    figure, ax = plt.subplots(figsize=(6,6))
+    ax.set_title("Angular phase")
+    ax.set_xlabel("theta_first")
+    ax.set_ylabel("theta_second")
+    ax.grid(True)
+    ax.set_aspect('equal')
+    ax.set_xlim(np.nanmin(theta1) - 0.1, np.nanmax(theta1) + 0.1)
+    ax.set_ylim(np.nanmin(theta2) - 0.1, np.nanmax(theta2) + 0.1)
 
-for diff in np.linspace(0.01, 0.1, num=3, endpoint=True):
-    theta1_0 = np.pi / 2 + diff
-    theta2_0 = np.pi / 2 + diff
-    gamma1_0 = np.pi / 2 
-    gamma2_0 = np.pi / 2 
-    #print(diff)
-    pendulums = [
-    {'theta1_0': theta1_0, 'theta2_0': theta2_0,
-        'color': 'red', 'label': 'Built In (RK45)'},
-    {'theta1_0': gamma1_0, 'theta2_0': gamma2_0,
-        'color': 'blue', 'label': 'Built In (RK45)'},
-]
-    sim = animate_pendulum(pendulums=pendulums, t_max= 100, interval = 3, show_animation=False)
-    position_difference.append(np.sqrt((sim[0]['x2'][::5] - sim[1]['x2'][::5])**2 +  \
-                               (sim[0]['y2'][::5] - sim[1]['y2'][::5])**2))
+    #Artists
+    line = ax.plot([], [], color='b', lw=1)[0]
+    point = ax.plot([],[], color = 'b')[0]
 
-# Plotting
-plt.figure(figsize=(8,8))
-time = np.arange(len(sim[0]['x2'][::5])) * 0.05
+    def init():
+        line.set_data([], [])
+        point.set_data([], [])
+        return line, point
 
-for i in range(3):
-    plt.plot(time, position_difference[i], label=f"Difference = {round(0.01 + i * 0.045,3)}")
+    def update(frame):
+        # FIX 3: Plot everything from index 0 to 'frame' to show the trail
+        line.set_data(theta1[:frame], theta2[:frame])
+        # Plot the current position as a dot
+        point.set_data([theta1[frame]], [theta2[frame]])
+        return line, point
 
-plt.yscale('log')
-plt.xlabel("Time")
-plt.ylabel("Difference in endpoints on a log scale")
-plt.legend()
+    ani = animation.FuncAnimation(figure, update, frames=len(theta1),interval = 2,
+                                init_func=init ,blit=True)
+    plt.show()
+
+#phase_animation()
+
+# 3d time plot
+fig = plt.figure(figsize=(10, 7))
+ax = fig.add_subplot(111, projection='3d')
+ax.set_xlabel(r'$\theta_1$')
+ax.set_ylabel(r'$\theta_2$')
+ax.set_zlabel('Time (s)')
+ax.set_title(r'$\theta_1$ vs. $\theta_2$ vs. Time')
+ax.plot(theta1, theta2, np.linspace(0, t_max, len(theta1)), lw=0.5)
+plt.show()
+
+#3d angular velocity phase dependence
+fig = plt.figure(figsize=(10, 7))
+ax = fig.add_subplot(111, projection='3d')
+ax.set_xlabel(r'$\theta_1$')
+ax.set_ylabel(r'$\theta_2$')
+ax.set_zlabel(r'$\omega_1$')
+ax.set_title(r'$\theta_1$ vs. $\theta_2$ vs. $\omega_1$')
+ax.plot(theta1, theta2, omega2)
 plt.show()
