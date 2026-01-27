@@ -36,21 +36,14 @@ def implicit_euler(derivs, t_span, y0, t_eval):
 
 
 def compute_energy(theta1, omega1, theta2, omega2):
-    v1x = L1 * omega1 * np.cos(theta1)
-    v1y = L1 * omega1 * np.sin(theta1)
-    v2x = v1x + L2 * omega2 * np.cos(theta2)
-    v2y = v1y + L2 * omega2 * np.sin(theta2)
 
-    T = 0.5 * m1 * (v1x**2 + v1y**2) + 0.5 * m2 * (v2x**2 + v2y**2)
-
-    y1 = -L1 * np.cos(theta1)
-    y2 = y1 - L2 * np.cos(theta2)
-    U = m1 * g * y1 + m2 * g * y2
+    T = omega1**2 + 0.5*omega2**2 + omega2*omega1*np.cos(theta1-theta2)
+    U = -g*(2*np.cos(theta1) + np.cos(theta2))
 
     return T + U
 
 
-def plot_energy(pendulums, t_max=40, title="Energy vs Time"):
+def plot_energy(pendulums, t_max=40, title="Energy vs Time", derivs=double_pendulum_derivs, show_plot=True):
     """Plot total energy vs time for multiple pendulum solvers."""
     if isinstance(pendulums, dict):
         pendulums = [pendulums]
@@ -59,6 +52,7 @@ def plot_energy(pendulums, t_max=40, title="Energy vs Time"):
     t_eval = np.linspace(0, t_max, int(t_max * 100))
 
     fig, ax = plt.subplots(figsize=(10, 6))
+    energies = []
 
     for i, p in enumerate(pendulums):
         theta1_0 = p['theta1_0']
@@ -72,22 +66,26 @@ def plot_energy(pendulums, t_max=40, title="Energy vs Time"):
         y0 = [theta1_0, omega1_0, theta2_0, omega2_0]
 
         if solver is not None:
-            t, y = solver(double_pendulum_derivs, t_span, y0, t_eval)
+            t, y = solver(derivs, t_span, y0, t_eval)
             theta1, omega1, theta2, omega2 = y[0], y[1], y[2], y[3]
         else:
-            sol = solve_ivp(double_pendulum_derivs, t_span, y0, t_eval=t_eval, max_step=0.01)
+            sol = solve_ivp(derivs, t_span, y0, t_eval=t_eval, max_step=0.01)
             theta1, omega1, theta2, omega2 = sol.y[0], sol.y[1], sol.y[2], sol.y[3]
             t = t_eval
 
         energy = compute_energy(theta1, omega1, theta2, omega2)
-        ax.plot(t, energy, color=color, label=label)
+        energies.append(energy)
+        if show_plot:
+            ax.plot(t, energy, color=color, label=label)
 
-    ax.set_xlabel("Time (s)")
-    ax.set_ylabel("Total Energy (J)")
-    ax.set_title(title)
-    ax.legend()
-    ax.grid(True)
-    plt.show()
+    if show_plot:
+        ax.set_xlabel("Time (s)")
+        ax.set_ylabel("Total Energy (J)")
+        ax.set_title(title)
+        ax.legend()
+        ax.grid(True)
+        plt.show()
+    return energies
 
 
 def main(plot_energy_flag=False):

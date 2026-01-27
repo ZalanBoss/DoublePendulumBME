@@ -10,7 +10,9 @@ DEFAULT_COLORS = ['blue', 'red', 'green', 'orange', 'purple', 'cyan', 'magenta',
 
 
 def animate_pendulum(pendulums, t_max=40, interval=2, trail_length=1000, show_legend=True,
-                     title="Double Pendulum Trajectory", show_animation=True):
+                     title="Double Pendulum Trajectory", show_animation=True, derivs=None):
+    if derivs is None:
+        derivs = double_pendulum_derivs
     if isinstance(pendulums, dict):
         pendulums = [pendulums]
 
@@ -31,13 +33,13 @@ def animate_pendulum(pendulums, t_max=40, interval=2, trail_length=1000, show_le
         y0 = [theta1_0, omega1_0, theta2_0, omega2_0]
 
         if solver is not None:
-            t, y = solver(double_pendulum_derivs, t_span, y0, t_eval)
+            t, y = solver(derivs, t_span, y0, t_eval)
             theta1 = y[0]
             theta2 = y[2]
             omega1 = y[1]
             omega2 = y[3]
         else:
-            sol = solve_ivp(double_pendulum_derivs, t_span, y0, t_eval=t_eval, max_step=0.01)
+            sol = solve_ivp(derivs, t_span, y0, t_eval=t_eval, max_step=0.01)
             theta1 = sol.y[0]
             omega1 = sol.y[1]
             theta2 = sol.y[2]
@@ -124,7 +126,7 @@ def animate_pendulum(pendulums, t_max=40, interval=2, trail_length=1000, show_le
     return simulations
 
 
-def animate_comparison(initial_angle, t_max=30, interval=20):
+def animate_comparison(initial_angle, t_max=30, interval=20, compare_endpoints=False):
     """Animate double pendulum with simple harmonic motion overlay."""
     t = np.linspace(0, t_max, int(t_max * 50))
 
@@ -135,8 +137,13 @@ def animate_comparison(initial_angle, t_max=30, interval=20):
     theta2_dp = sol.y[2]
 
     # Fit harmonic motion
-    w = minimize_scalar(lambda w: np.sum((theta1_dp - initial_angle*np.cos(w*t))**2),
-                        bounds=(0.1, 15), method="bounded").x
+    if compare_endpoints:
+        w = minimize_scalar(lambda w: np.sum((np.array([
+            np.sin(theta1_dp) + np.sin(theta2_dp) - 2*np.sin(initial_angle*np.cos(w*t)),
+            -np.cos(theta1_dp) - np.cos(theta2_dp) + 2*np.cos(initial_angle*np.cos(w*t))])**2))).x  # type: ignore
+    else:
+        w = minimize_scalar(lambda w: np.sum((theta1_dp - initial_angle*np.cos(w*t))**2),
+                            bounds=(0.1, 15), method="bounded").x  # type: ignore
     theta_harmonic = initial_angle * np.cos(w * t)
 
     # Double pendulum cartesian coordinates
@@ -163,7 +170,8 @@ def animate_comparison(initial_angle, t_max=30, interval=20):
     ax.set_ylim(y_min, y_max)
     ax.set_aspect('equal')
     ax.grid(True)
-    ax.set_title(f'Double Pendulum vs Harmonic Motion (θ₀ = {initial_angle:.2f} rad)')
+    method = "Endpoint Matching" if compare_endpoints else "Angle Matching"
+    ax.set_title(f'Double Pendulum vs Harmonic Motion (θ₀ = {initial_angle:.2f} rad, {method})')
 
     # Double pendulum (blue)
     dp_rod, = ax.plot([], [], 'b-', lw=2, label='Double Pendulum')
