@@ -31,17 +31,17 @@ def animate_pendulum(pendulums, t_max=40, interval=2, trail_length=1000, show_le
         color = p.get('color', DEFAULT_COLORS[i % len(DEFAULT_COLORS)])
         label = p.get('label', f'Pendulum {i+1}')
         solver = p.get('solver', None)
-
+        deriv_func = p.get('deriv_func', derivs)  # per-pendulum overrides global
         y0 = [theta1_0, omega1_0, theta2_0, omega2_0]
 
         if solver is not None:
-            t, y = solver(derivs, t_span, y0, t_eval)
+            t, y = solver(deriv_func, t_span, y0, t_eval)
             theta1 = y[0]
             theta2 = y[2]
             omega1 = y[1]
             omega2 = y[3]
         else:
-            sol = solve_ivp(derivs, t_span, y0, t_eval=t_eval, max_step=0.01)
+            sol = solve_ivp(deriv_func, t_span, y0, t_eval=t_eval, max_step=0.01)
             theta1 = sol.y[0]
             omega1 = sol.y[1]
             theta2 = sol.y[2]
@@ -59,7 +59,7 @@ def animate_pendulum(pendulums, t_max=40, interval=2, trail_length=1000, show_le
             'theta1': theta1, 'theta2': theta2,
             'omega1': omega1, 'omega2': omega2
         })
-
+    # Animation
     if show_animation:
         # Setup plot
         figure, ax = plt.subplots(figsize=(8, 8))

@@ -21,15 +21,16 @@ def remove_lines(theta):
 
 
 # Initial values
-diff = 2.5  # 2.27435 for lightly chaotic
+diff = 2.27435  # for chaotic behavior after some time
 theta1_0 =  np.pi / diff
 theta2_0 =  np.pi / diff
+t_max = 200
 
 pendulums = [
     {'theta1_0': theta1_0, 'theta2_0': theta2_0,
         'color': 'green', 'label': 'RK045'},
 ]
-sim = animate_pendulum(pendulums=pendulums,show_animation= False,t_max=200)[0]
+sim = animate_pendulum(pendulums=pendulums,show_animation= True,t_max=t_max)[0]
 
 # Take the angles and angular velocity
 theta1 = (sim['theta1'] + np.pi) % (2 * np.pi) - np.pi
@@ -39,10 +40,15 @@ omega2 = sim['omega2']
 theta1 = remove_lines(theta1)
 theta2 = remove_lines(theta2)
 
-
+plt.title(r'$\theta_1$ vs $\theta_2$')
+plt.xlabel(r'$\theta_1$')
+plt.ylabel(r'$\theta_2$')
 plt.plot(theta1, theta2)
 plt.show()
 
+plt.title(r'$\theta_2$ vs $\omega_2$')
+plt.xlabel(r'$\theta_2$')
+plt.ylabel(r'$\omega_2$')
 plt.plot(theta2, omega2)
 plt.show()
 
@@ -87,7 +93,7 @@ ax.set_xlabel(r'$\theta_1$')
 ax.set_ylabel(r'$\theta_2$')
 ax.set_zlabel('Time (s)')
 ax.set_title(r'$\theta_1$ vs. $\theta_2$ vs. Time')
-ax.plot(theta1, theta2, np.linspace(0, 120, len(theta1)), lw=0.5)
+ax.plot(theta1, theta2, np.linspace(0, t_max, len(theta1)), lw=0.5)
 plt.show()
 
 #3d angular velocity phase dependence
